@@ -405,6 +405,13 @@ ul.nav-tabs-margin {
 
 .main {
   padding: 20px;
+  
+  div.note-content {
+    p {
+      hyphens: auto;
+    }
+  }
+  
 }
 
 /*@media (min-width: 768px) {
@@ -650,6 +657,10 @@ ul.nav-tabs-margin {
     text-overflow:ellipsis;
     overflow:hidden;
   }
+  
+  .childNotebook {
+    margin-left: 10px;
+  }
 }
 
 #sidebarCalendar {
@@ -764,6 +775,7 @@ ul.nav-tabs-margin {
     
     ul.tree-children {
         padding: 10px 10px 10px 0;
+        background-color: @gray;
     }
 
     ul {

@@ -2,6 +2,22 @@
 
 /*
 |--------------------------------------------------------------------------
+| Taken from JamborJan/paperwork repo
+|--------------------------------------------------------------------------
+| Set $_SERVER['HTTPS'] depending on HTTP_X_FORWARDED_PROTO
+|--------------------------------------------------------------------------
+|
+| See: https://github.com/twostairs/paperwork/issues/281
+| See: https://github.com/JamborJan/paperwork/issues/20
+|
+*/
+if ((array_key_exists('HTTP_X_FORWARDED_PROTO', $_SERVER) ? $_SERVER[ 'HTTP_X_FORWARDED_PROTO'] : 'HTTP_X_FORWARDED_PROTO not set') == "https") {
+	$_SERVER['HTTPS'] = "on";
+	URL::forceSchema('https');
+}
+
+/*
+|--------------------------------------------------------------------------
 | Application Routes
 |--------------------------------------------------------------------------
 |
@@ -17,29 +33,36 @@ App::missing(function ($exception) {
     return Response::view('404', array(), 404);
 });
 
-if(File::exists(storage_path() . "/config/setup") && File::get(storage_path() . "/config/setup") < 7) {
+$setupFilePath = "../app/storage/config/setup";
+
+if(File::exists($setupFilePath) && File::get($setupFilePath) < 7) {
     Route::post('setup/setConfig', ["as" => "setup/setConfig", "uses" => "SetupController@setConfiguration"]);
     Route::get('setup/register', function() {
-        return View::make('partials/registration-form', array('ajax' => true));
+        return View::make('partials/registration-form');
     });
     Route::post('setup/register', ["as" => "setup/register", "uses" => "UserController@register"]);
     Route::get('setup/finish', ["as" => "setup/finish", "uses" => "SetupController@finishSetup"]);
-    Route::get('setup/checkDBStatus', ["as" => "setup/checkDBStatus", "uses" => "SetupController@checkDatabaseStatus"]);
-    Route::get('setup/installDatabase', ["as" => "setup/installDatabase", "uses" => "SetupController@installDatabase"]);
+
+    /* This is not needed for now since it is being handled by check_database_credentials.php */
+    //Route::get('setup/installDatabase', ["as" => "setup/installDatabase", "uses" => "SetupController@installDatabase"]);
+
+    /* TODO - Not implemented yet in the controller */
+    //Route::get('setup/checkDBStatus', ["as" => "setup/checkDBStatus", "uses" => "SetupController@checkDatabaseStatus"]);
+
 }else{
     Route::get('/login', ["as" => "user/login", "uses" => "UserController@showLoginForm"]);
     Route::post('/login', ["as" => "user/login", "uses" => "UserController@login"]);
-    
-    if (Config::get('paperwork.registration')) {
+
+    if (Config::get('paperwork.registration') === "true") {
         Route::get("/register", ["as" => "user/register", "uses" => "UserController@showRegistrationForm"]);
         Route::post("/register", ["as" => "user/register", "uses" => "UserController@register"]);
     }
-    
+
     if (Config::get('paperwork.forgot_password')) {
         Route::any("/request", ["as" => "user/request", "uses" => "UserController@request"]);
         Route::any("/reset/{token}", ["as" => "user/reset", "uses" => "UserController@reset"]);
     }
-    
+
     //Authorized Users
     Route::group(["before" => "auth"], function () {
         App::setLocale(PaperworkHelpers::getUiLanguageFromSession());
@@ -50,24 +73,30 @@ if(File::exists(storage_path() . "/config/setup") && File::get(storage_path() . 
         Route::any("/settings/export", ["as" => "user/settings/export", "uses" => "UserController@export"]);
         Route::any("/settings/import", ["as" => "user/settings/import", "uses" => "UserController@import"]);
         Route::get('/', ["as" => "/", "uses" => "LibraryController@show"]);
-    
+
         //Administrators
         Route::group(['prefix' => 'admin', 'before' => ['admin']], function () {
             Route::get('/', ['as' => 'admin/console', 'uses' => 'AdminController@showConsole']);
             Route::post('/users/delete', ['as' => 'admin/users/delete', 'uses' => 'AdminController@deleteOrRestoreUsers']);
+
+            if(Config::get('paperwork.registration') === "admin") {
+                Route::get("/register", ["as" => "user/register", "uses" => "UserController@showRegistrationForm"]);
+                Route::post("/register", ["as" => "user/register", "uses" => "UserController@register"]);
+            }
         });
     });
-    
-    
+
+
     Route::get('/templates/{angularTemplate}', function ($angularTemplate) {
         return View::make('templates/' . $angularTemplate);
     });
-    
+
     Route::group(array('prefix' => 'api/v1', 'before' => 'auth'), function () {
         App::setLocale(PaperworkHelpers::getUiLanguageFromSession());
         // Route::any('notebook/{num?}', 'ApiNotebooksController@index')->where('num','([0-9]*)');
         Route::resource('notebooks', 'ApiNotebooksController');
     	Route::get('/notebooks/{notebookId}/share/{toUserId}/{toUMASK}', 'ApiNotebooksController@share');
+        Route::get('/notebooks/{notebookId}/remove-collection', 'ApiNotebooksController@removeNotebookFromCollection');
         Route::resource('tags', 'ApiTagsController');
         Route::resource('notebooks.notes', 'ApiNotesController');
         // I really don't know whether that's a great way to solve this...
@@ -92,7 +121,7 @@ if(File::exists(storage_path() . "/config/setup") && File::get(storage_path() . 
         Route::get('/tagged/{num}', 'ApiNotesController@tagged');
         Route::get('/search/{query}', 'ApiNotesController@search');
     });
-    
+
     // Route::any('/api/v1/notebooks/(:num?)', array('as' => 'api.v1.notebooks', 'uses' => 'ApiNotebooksController@index'));
     // Route::any('/api/v1/notes/(:num?)', array('as' => 'api.v1.notes', 'uses' => 'api.v1.notes@index'));
 }

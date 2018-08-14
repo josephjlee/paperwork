@@ -29,7 +29,7 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
       return $rootScope.notebookSelectedId;
     };
 
-    
+
     $scope.getUsers = function (notebookId, propagationToNotes, update){
         if(typeof $rootScope.i18n != "undefined")
 	    $rootScope.umasks=[{'name':$rootScope.i18n.keywords.not_shared, 'value':0},
@@ -70,12 +70,16 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
         }
       });
     };
-    
+
     $scope.openNotebook = function(notebookId, type, index) {
       if(parseInt(type) == 1) {
-          $scope.collectionOpen = notebookId;
+          if($scope.collectionOpen === notebookId) {
+            $scope.collectionOpen = "";
+          }else {
+            $scope.collectionOpen = notebookId;
+          }
       }
-      
+
       if(parseInt(type) == 0 || parseInt(type) == 2) {
         // If the notebooks tree should be collapsed, expand it,
         // so the user sees which notebook is being selected through the shortcut.
@@ -271,11 +275,12 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
       });*/
       $rootScope.modalNotebookDelete = {
           'delete_notes': false,
-          'notebookId': notebookId
+          'notebookId': notebookId,
+          'notebookTitle': NotebooksService.getNotebookByIdLocal(notebookId).title
       };
-      $("#modalNotebookDelete").show();
+      $("#modalNotebookDelete").modal("show");
     };
-    
+
     $rootScope.propagationToNotes=false;
     $scope.modalShareNotebook = function(notebookId){
       if($rootScope.menuItemNotebookClass() === 'disabled') {
@@ -307,17 +312,17 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
           return true;
         }
       });
-      
+
     };
     $scope.modalUsersNotebookSelectSubmit = function(notebookId, toUserId, propagationToNotes) {
       $rootScope.modalMessageBox.theCallback(notebookId, toUserId, propagationToNotes);
     };
-    
+
     $scope.modalUsersNotebookSelectCheck = function(notebookId,_prop){
       $rootScope.propagationToNotes=_prop;
-      $scope.getUsers(notebookId, _prop, true);  
+      $scope.getUsers(notebookId, _prop, true);
     }
-    
+
     $scope.onDropSuccess = function(data, event) {
       NotesService.moveNote(data.notebook_id, data.id, this.notebook.id);
       // Try to make the openNotebook dependant on the result of the move
@@ -403,11 +408,10 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
          };
          $('#modalCollection').modal("show");
     };
-    
+
     $rootScope.selectedNotebooksForCollection = {};
 
     $scope.modalCollectionSubmit = function() {
-        console.log($rootScope.modalCollection.notebooks);
         $rootScope.modalCollection.notebooks = [];
         angular.forEach($rootScope.selectedNotebooksForCollection, function(value, key) {
             if(value) {
@@ -422,7 +426,7 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
             var action = $rootScope.modalCollection.action;
             return function(status, data) {
                 switch(status) {
-                    case 200: 
+                    case 200:
                         $("#modalCollection").modal("hide");
                         _paperworkNotebooksService.getNotebooks();
                         StatusNotifications.sendStatusFeedback("success", "collection_" + action + "_successfully");
@@ -433,7 +437,7 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
                             elementWrapper.find("input[name='title']").parents('.form-group').addClass('has-error');
                         }
                         break;
-                    default: 
+                    default:
                         StatusNotifications.sendStatusFeedback("error", "collection_" + action + "_failed");
                         break;
                 }
@@ -446,11 +450,11 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
         }
         $rootScope.selectedNotebooksForCollection = {};
     };
-    
+
     $scope.isCollectionOpen = function(collectionId) {
         return $scope.collectionOpen === collectionId;
     };
-    
+
     $rootScope.modalEditCollection = function(id) {
          var currentNotebookId = "";
          var collection = NotebooksService.getNotebookByIdLocal(id);
@@ -479,14 +483,14 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
 
          $('#modalCollection').modal("show");
     };
-    
+
     $scope.initialiseSidebar = function () {
         NotebooksService.getCalendar($scope.sidebarCalendarCallback);
         NotebooksService.getNotebookShortcuts(null);
         NotebooksService.getNotebooks();
         NotebooksService.getTags();
     };
-    
+
     $scope.modalNotebookDeleteSubmit = function () {
         var callback = (function() {
             return function(status, data) {
@@ -512,10 +516,10 @@ angular.module('paperworkNotes').controller('SidebarNotebooksController',
                 }
             };
         })();
-        
+
         NotebooksService.deleteNotebook($rootScope.modalNotebookDelete.notebookId, callback);
         $('#modalNotebookDelete').modal('hide');
         return true;
     };
-    
+
   });

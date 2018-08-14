@@ -65,7 +65,7 @@ return array(
 	| no new users will be able to register.
 	|
 	*/
-	'registration' => isset($configuration->registration) ? ($configuration->registration == "true") : true,
+	'registration' => isset($configuration->registration) ? ($configuration->registration) : true,
 
 	/*
 	|--------------------------------------------------------------------------
@@ -186,14 +186,36 @@ return array(
 	*/
 	'tagsPublicPrefixCharacter' => '+',
   	'purgeTagList' => ['script'],
-  	
+
   	/*
   	|------------------------------------------------------------------------
-  	| Maximum Attachments Per Note 
+  	| Maximum Attachments Per Note
   	|------------------------------------------------------------------------
   	|
-  	| The maximum number of attachments that can be attachned to each note. 
+  	| The maximum number of attachments that can be attachned to each note.
   	*/
-  	'maximumAttachmentsPerNote' => 10,
+	'maximumAttachmentsPerNote' => isset($configuration->maximumAttachmentsPerNote) ? ($configuration->maximumAttachmentsPerNote) : 10,
+
+	/*
+	|-------------------------------------------------------------------------
+	| removeEditorButtonsCKEditor
+	|-------------------------------------------------------------------------
+	|
+	| The default plugins included in the basic setup define some buttons that
+	| are not needed in a basic editor. The ones to be removed are defined
+	| here.
+	*/
+	'removeEditorButtonsCKEditor' =>
+		isset($configuration->removeEditorButtonsCKEditor) ? $configuration->removeEditorButtonsCKEditor : 'Cut,Copy,Paste,Undo,Redo,Anchor,Underline,Strike,Subscript,Superscript',
+
+	/*
+	|-------------------------------------------------------------------------
+	| EXTRA Features
+	|-------------------------------------------------------------------------
+	| These are candidates to be plugins when the necessary functionality is
+	| implemented. Until then, these are implemented in core but can be
+	| turned off from the configuration settings.
+	*/
+	'extra_feature_checkboxes' => isset($configuration->extra_feature_checkboxes) ? ($configuration->extra_feature_checkboxes) : true,
 
 );

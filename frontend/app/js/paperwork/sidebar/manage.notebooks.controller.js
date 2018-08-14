@@ -10,7 +10,6 @@ angular.module('paperworkNotes').controller('SidebarManageNotebooksController',
     //$('#modalManageNotebooks').on('show.bs.modal', function (e) {
     // Added watch to rebuild list when we add new element
     $rootScope.$watch('notebooks', function(newValue, oldValue) {
-      // Remove 'All Notes' item
       var data = ($.isArray($rootScope.notebooks)) ? $rootScope.notebooks.slice() : [];
       for(var i in data) {
         data[i].css_class = "notebook_line";
@@ -20,6 +19,9 @@ angular.module('paperworkNotes').controller('SidebarManageNotebooksController',
         }
         if(data[i].type == 1) {
             data[i].css_class = "collection_line";
+        }
+        for(var j in data[i].children) {
+          data.push(data[i].children[j]);
         }
       }
       $scope.modalList = data;
@@ -84,6 +86,13 @@ angular.module('paperworkNotes').controller('SidebarManageNotebooksController',
       });
     });
 
+    $scope.removeFromCollection = function(id) {
+      NotebooksService.removeNotebookFromCollection(id, function(status) {
+        NotebooksService.getNotebooks();
+        NotebooksService.getNotebookShortcuts();
+      });
+    };
+
     $scope.deleteItem = function(id, type) {
       var modalTitle, modalContent;
       if(type == 0) {
@@ -121,7 +130,8 @@ angular.module('paperworkNotes').controller('SidebarManageNotebooksController',
       }else{
           $rootScope.modalNotebookDelete = {
               'action': false,
-              'notebookId': id
+              'notebookId': id,
+              'notebookTitle': NotebooksService.getNotebookByIdLocal(id).title
           };
           $('#modalNotebookDelete').modal('show');
       }
@@ -184,11 +194,11 @@ angular.module('paperworkNotes').controller('SidebarManageNotebooksController',
         $row.find('a').editable('show');
       }, 1);
     };
-    
+
     $scope.editLineCalled = function(id, type) {
         if(type == 1) {
             $rootScope.modalEditCollection(id);
         }
     };
-    
+
   });

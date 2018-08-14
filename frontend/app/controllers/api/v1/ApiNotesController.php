@@ -29,8 +29,7 @@ class ApiNotesController extends BaseController
 
     private function getNoteVersionsBrief($noteId)
     {
-        $note           =
-            Note::with('version')->where('notes.id', '=', $noteId)->first();
+        $note = Note::with('version')->where('notes.id', '=', $noteId)->first();
         $versionsObject = $note->version()->first();
         if (is_null($versionsObject)) {
             return null;
@@ -43,17 +42,27 @@ class ApiNotesController extends BaseController
         $versions = array();
         while (!is_null($tmp)) {
             $versionsArray[] = $tmp;
-	    $user=$tmp->user()->first();
+            $user = $tmp->user()->first();
             $versions[] = array(
                 'id'          => $tmp->id,
                 'previous_id' => $tmp->previous_id,
                 'next_id'     => $tmp->next_id,
                 'latest'      => $isLatest,
                 'timestamp'   => $tmp->created_at->getTimestamp(),
-		'username'    => $user->firstname.' '.$user->lastname
+                'username'    => $user->firstname.' '.$user->lastname
             );
             $isLatest   = false;
             $tmp        = $tmp->previous()->first();
+        }
+
+        /**
+         * If the note has more than one version, remove the oldest version from
+         * the returned history since this is the one automatically created when
+         * creating the note and thus is blank.
+         */
+        $versionsCount = count($versions);
+        if ($versionsCount > 1) {
+            unset($versions[$versionsCount - 1]);
         }
 
         return $versions;
@@ -155,18 +164,18 @@ class ApiNotesController extends BaseController
 
             if ($date !== false) {
 
-                $notes = $notes->where(DB::raw('YEAR(notes.updated_at)'), '=',
+                $notes = $notes->where(DB::raw('EXTRACT(year FROM notes.updated_at)'), '=',
                     $date[1]);
 
                 if (isset($date[2])) {
                     $notes =
-                        $notes->where(DB::raw('MONTH(notes.updated_at)'), '=',
+                        $notes->where(DB::raw('EXTRACT(month FROM notes.updated_at)'), '=',
                             sprintf("%02s", $date[2]));
                 }
 
                 if (isset($date[3])) {
                     $notes =
-                        $notes->where(DB::raw('DAY(notes.updated_at)'), '=',
+                        $notes->where(DB::raw('EXTRACT(day FROM notes.updated_at)'), '=',
                             sprintf("%02s", $date[3]));
                 }
             }
@@ -232,7 +241,6 @@ class ApiNotesController extends BaseController
                            'notes.updated_at',
                            'note_user.umask'
                        )->distinct()
-            //->toSql();
                        ->get();
 
         if (is_null($notes)) {
@@ -348,7 +356,7 @@ class ApiNotesController extends BaseController
             'title'           => $newNote->get("title"),
             'content'         => $newNote->get("content"),
             'content_preview' => $newNote->get("content_preview"),
-	    'user_id' => Auth::user()->id
+            'user_id' => Auth::user()->id
         ]);
 
         $version->save();
@@ -397,14 +405,14 @@ class ApiNotesController extends BaseController
             return PaperworkHelpers::apiResponse(PaperworkHelpers::STATUS_NOTFOUND,
                 array('item' => 'note', 'id' => $noteId));
         }
-                    
-                    
+
+
        $tagIds = ApiTagsController::createOrGetTags($updateNote->get('tags'),$noteId,$note->pivot->umask);
 
         if (!is_null($tagIds)) {
             $note->tags()->sync($tagIds);
         }
-        
+
         if($note->pivot->umask<PaperworkHelpers::UMASK_READWRITE){
             return PaperworkHelpers::apiResponse(PaperworkHelpers::STATUS_ERROR, array('message' => 'Permission error. The private tags have been saved though.'));
         }
@@ -419,13 +427,19 @@ class ApiNotesController extends BaseController
             $pureContent =
                 PaperworkHelpers::purgeHtml($updateNote->get("content"));
 
-            // TODO: This is a temporary workaround for the content_preview. We need to check, whether there is content or at least one attachment.
-            // If there's no content, parse the attachment and set the result as content_preview. This should somehow be done within the DocumentParser, I guess.
+            if(empty($pureContent)) {
+                // TODO: Check if there is at least one attachment. If yes, parse the attachment and set this result as content_preview.
+                // This should probably be done in DocumentParser.
+                $contentPreview = "";
+            }else{
+                $contentPreview = substr(strip_tags($pureContent), 0, 255);
+            }
+
             $version = new Version(array(
                 'title'           => $updateNote->get("title"),
                 'content'         => $pureContent,
-                'content_preview' => substr(strip_tags($pureContent), 0, 255),
-		'user_id' => $user->id
+                'content_preview' => $contentPreview,
+                'user_id' => $user->id
             ));
 
             $version->save();
@@ -524,7 +538,7 @@ class ApiNotesController extends BaseController
             // return PaperworkHelpers::apiResponse(PaperworkHelpers::STATUS_NOTFOUND, array('item'=>'notebook', 'id'=>$toNotebookId));
             return null;
         }
-    
+
         $note->notebook()->associate($toNotebook);
         $note->save();
 
@@ -592,7 +606,7 @@ class ApiNotesController extends BaseController
             $note->save();
             return $note;
         }
-        
+
     }
     public function share($notebookId, $noteId, $toUserId, $toUMASK){
         $noteIds   =
@@ -617,7 +631,7 @@ class ApiNotesController extends BaseController
                 }
             }
         }
-        return PaperworkHelpers::apiResponse($status, $responses);        
+        return PaperworkHelpers::apiResponse($status, $responses);
     }
 }
 

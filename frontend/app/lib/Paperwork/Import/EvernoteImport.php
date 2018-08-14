@@ -19,7 +19,7 @@ class EvernoteImport extends AbstractImport
     public function process()
     {
         if (isset($this->xml['note'])) {
-            $this->createNotebook('Evernote');
+            $this->createNotebook('Evernote'.date('omd').'T'.date('His').'Z');
 
             // libxml returns single element instead of array if 1 note
             if (isset($this->xml['note']['content'])) {
@@ -45,8 +45,9 @@ class EvernoteImport extends AbstractImport
         $rootHasAttributes = isset($this->xml['@attributes']);
         $isAppSet          = isset($this->xml['@attributes']['application']);
         $isEvernote        = preg_match('/evernote/i', $this->xml['@attributes']['application']);
+        $isPaperwork       = preg_match('/paperwork/i', $this->xml['@attributes']['application']);
 
-        return $rootHasAttributes && $isAppSet && $isEvernote;
+        return $rootHasAttributes && $isAppSet && ($isEvernote || $isPaperwork);
     }
 
     /**
@@ -59,8 +60,9 @@ class EvernoteImport extends AbstractImport
      public function import(UploadedFile $file)
      {
          try {
+             ini_set('memory_limit', '-1');
              $xmlfile = file_get_contents($file->getRealPath());
-             $xmlfile = html_entity_decode($xmlfile);
+             $xmlfile = str_replace(array("&amp;", "&"), array("&", "&amp;"), $xmlfile);
              $this->xml = simplexml_load_string($xmlfile, 'SimpleXMLElement',
                  LIBXML_PARSEHUGE | LIBXML_NOCDATA);
              $this->xml = json_decode(json_encode($this->xml), true);
@@ -160,8 +162,7 @@ class EvernoteImport extends AbstractImport
             $hasResourceAttr = isset($attachment['resource-attributes']);
             $hasFileName     = isset($attachment['resource-attributes']['file-name']);
 
-            $fileName = $attachment['resource-attributes']['file-name'];
-            $fileName = ($hasResourceAttr && $hasFileName) ? $fileName : uniqid(rand(), true);
+            $fileName = ($hasResourceAttr && $hasFileName) ? $attachment['resource-attributes']['file-name'] : uniqid(rand(), true);
 
             $fileContent = base64_decode($attachment['data']);
             $fileHash    = md5($fileContent);

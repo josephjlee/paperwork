@@ -18,7 +18,7 @@ return array(
     'notebook_edit_failed'          => 'Something went wrong while updating your notebook. Please try again. ',
     'upload_finished_successfully'  => 'Your upload finished successfully. ',
     'upload_failed'                 => 'Your upload has failed. Please try again. ',
-    'file_deleted_successfully'     => 'Something went wrong while deleting your file. Please try again. ',
+    'file_deleted_successfully'     => 'Your attachment has been deleted successfully. ',
     'note_share_success'            => 'Your note was shared successfully.',
     'note_share_fail'               => 'Something went wrong while sharing your note. You might not have permission to share.',
     'notebook_share_success'        => 'Your notebook was shared successfully.',
@@ -27,4 +27,7 @@ return array(
     'collection_create_failed'      => 'Something went wrong while creating the new collection. Please try again. ',
     'collection_edit_successfully'  => 'Your collection has been updated successfully. ',
     'collection_edit_failed'        => 'Something went wrong while updating your collection. Please try again. ',
+    'maximum_attachments_reached'   => 'You have reached the maximum number of attachments allowed per note. ',
+    'note_delete_failed'            => 'Something went wrong while deleting your note. Please try again. ',
+    'note_deleted_successfully'     => 'Your note has been deleted successfully. ',
 );

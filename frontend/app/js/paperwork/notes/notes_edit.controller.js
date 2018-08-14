@@ -20,15 +20,28 @@ angular.module('paperworkNotes').controller('NotesEditController',
             $rootScope.versionSelectedId = {'notebookId': notebookId, 'noteId': noteId, 'versionId': 0};
             NotesService.getNoteById(noteId);
             $rootScope.templateNoteEdit = $rootScope.getNoteByIdLocal(noteId);
+
             if (typeof $rootScope.templateNoteEdit == "undefined" || $rootScope.templateNoteEdit == null) {
                 $rootScope.templateNoteEdit = {};
             }
-            
+
             if($rootScope.templateNoteEdit.title) {
                 $rootScope.templateNoteEdit.version = {};
                 $rootScope.templateNoteEdit.version.title = $rootScope.templateNoteEdit.title;
                 $rootScope.templateNoteEdit.version.content = $rootScope.templateNoteEdit.content;
             }
+
+            $scope.$watch('templateNoteEdit.version.content', function(value) {
+                var nonEditableMessage = $rootScope.i18n.messages.non_editable_checkbox_explanation;
+                var rawContent = $rootScope.templateNoteEdit.version.content;
+                var checkedBox = "<input type=\"checkbox\" checked disabled title=\"" + nonEditableMessage + "\">";
+                var uncheckedBox = "<input type=\"checkbox\" disabled title=\"" + nonEditableMessage + "\">";
+                if (rawContent.indexOf(checkedBox) !== -1 || rawContent.indexOf(uncheckedBox) !== -1) {
+                    rawContent = rawContent.replace(checkedBox, "[X]");
+                    rawContent = rawContent.replace(uncheckedBox, "[]");
+                    $rootScope.templateNoteEdit.version.content = rawContent;
+                }
+            });
 
             NotesService.getNoteVersionAttachments($rootScope.getNotebookSelectedId(), ($rootScope.getNoteSelectedId(true)).noteId, $rootScope.getVersionSelectedId(true).versionId,
                 function (response) {
@@ -49,21 +62,31 @@ angular.module('paperworkNotes').controller('NotesEditController',
                 window.onCkeditChangeFunction();
             });
 
-            var ck = CKEDITOR.replace('content', {
+            var ck_config = {
                 fullPage: false,
                 // extraPlugins: 'myplugin,anotherplugin',
                 // removePlugins: 'sourcearea,save,newpage,preview,print,forms',
                 toolbarCanCollapse: true,
                 toolbarStartupExpanded: false,
                 tabSpaces: 4,
-                skin: 'bootstrapck',
                 height: '400px',
+                autosave: {
+                    SaveKey: 'paperwork_autosave_' + $rootScope.noteSelectedId.noteId,
+                    saveOnDestroy: true,
+                    messageType: 'statusbar'
+                },
+                removeButtons: 'Cut,Copy,Paste,Undo,Redo,Anchor,Underline,Strike,Subscript,Superscript'
+            };
 
-                autosave_saveOnDestroy: true,
-                autosave_saveDetectionSelectors: "[id*='updateNote']"
-            });
-
+            var ck = CKEDITOR.replace('content', ck_config);
             ck.on('change', _onChangeFunction);
+
+            $scope.$watch(function() { return $rootScope.removeEditorButtonsCKEditor; }, function(value) {
+                ck.destroy();
+                ck_config.removeButtons = value;
+                ck = CKEDITOR.replace('content', ck_config);
+                ck.on('change', _onChangeFunction);
+            });
 
             window.onbeforeunloadInfo = $rootScope.i18n.messages.onbeforeunload_info;
             window.onbeforeunload = function () {
@@ -162,5 +185,5 @@ angular.module('paperworkNotes').controller('NotesEditController',
         $rootScope.navbarMainMenu = false;
         $rootScope.navbarSearchForm = false;
         $rootScope.expandedNoteLayout = true;
-	CKEDITOR.dtd.$removeEmpty['span'] = false; //necessary to CKEDITOR fontawesome plugin
+        CKEDITOR.dtd.$removeEmpty['span'] = false; //necessary to CKEDITOR fontawesome plugin
     });
